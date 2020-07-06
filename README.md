@@ -29,7 +29,7 @@ $ npm install --save @violetnorth/dns
 ```javascript
 const dns = require("@violetnorth/dns");
 
-const soa = await dns.resolve("violetnorth.com", "SOA", "8.8.8.8");
+const soa = await dns.resolve("violetnorth.com", "A", "8.8.8.8");
 console.log(soa);
 // {
 //   "id": 0,
@@ -90,7 +90,7 @@ console.log(soa);
 //   "additionals": []
 // }
 
-const trace = await dns.trace("violetnorth.com", "SOA");
+const trace = await dns.trace("violetnorth.com", "A");
 console.log(trace);
 // [
 //   {
