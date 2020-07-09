@@ -12,14 +12,16 @@ const _resolveUDP = (packet, addr, port = 53) => {
     const socket = dgram.createSocket("udp4");
 
     socket.on("message", message => {
-      resolve(dnsPacket.decode(message));
       socket.close();
+      resolve(dnsPacket.decode(message));
+      return;
     });
 
     socket.on("error", err => {
       reject(err);
+      return;
     });
-    
+
     socket.send(packet, 0, packet.length, parseInt(port), addr);
   });
 };
@@ -28,31 +30,35 @@ const _resolveTCP = (packet, addr, port = 53) => {
   return new Promise((resolve, reject) => {
     const socket = new net.Socket();
 
-    let message = Buffer.alloc(2048);
     socket.connect(parseInt(port), addr, () => {
       socket.write(packet);
     });
 
+    let message = Buffer.alloc(4096);
     socket.on("data", data => {
-      message = Buffer.concat([message, data]);
+      message = Buffer.concat([message, data], message.length + data.length);
     });
 
     socket.on("drain", () => {
-      resolve(dnsPacket.decode(message));
       socket.close();
+      resolve(dnsPacket.decode(message));
+      return;
     });
 
     socket.on("end", () => {
-      resolve(dnsPacket.decode(message));
       socket.destroy();
+      resolve(dnsPacket.decode(message));
+      return;
     });
 
     socket.on("error", err => {
       reject(err);
+      return;
     });
 
     socket.on("close", function() {
-      socket.destroy();
+      resolve(dnsPacket.decode(message));
+      return;
     });
   });
 };
@@ -60,6 +66,10 @@ const _resolveTCP = (packet, addr, port = 53) => {
 exports.resolve = (name, type, opts = {}) => {
   if (!opts.servers || !opts.servers.length) {
     opts.servers = dns.getServers();
+  }
+
+  if (!opts.protocols || !opts.protocols.length) {
+    opts.protocols = ["udp"];
   }
 
   const packet = dnsPacket.encode({
@@ -74,8 +84,12 @@ exports.resolve = (name, type, opts = {}) => {
   const queries = [];
   for (const server of opts.servers) {
     const [addr, port] = server.split(":");
-    queries.push(_resolveUDP(packet, addr, port));
-    queries.push(_resolveTCP(packet, addr, port));
+    if (opts.protocols.includes("udp")) {
+      queries.push(_resolveUDP(packet, addr, port));
+    }
+    if (opts.protocols.includes("tcp")) {
+      queries.push(_resolveTCP(packet, addr, port));
+    }
   }
 
   return Promise.race(queries);
