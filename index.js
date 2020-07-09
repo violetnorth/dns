@@ -1,77 +1,131 @@
 "use strict";
 
+const dns = require("dns");
+const net = require("net");
 const dgram = require("dgram");
 const dnsPacket = require("dns-packet");
 
-const lib = require("./lib");
-const root = require("./root");
+const root = require("./root.json");
 
-exports.resolve = (name, type, server = null, port = 53) => {
+const _resolveUDP = (packet, addr, port = 53) => {
   return new Promise((resolve, reject) => {
-
-    if (server === null) {
-      const err = new Error("server is required for dns lookup");
-      return reject(err);
-    }
-
-    type = type.toUpperCase();
-
-    const buf = dnsPacket.encode({
-      type: "query",
-      flags: dnsPacket.RECURSION_DESIRED,
-      questions: [{
-        type,
-        name,
-      }],
-    });
-    
     const socket = dgram.createSocket("udp4");
+
     socket.on("message", message => {
       resolve(dnsPacket.decode(message));
       socket.close();
     });
 
-    socket.on("error", error => {
-      reject(error);
+    socket.on("error", err => {
+      reject(err);
     });
     
-    socket.send(buf, 0, buf.length, port, server)
+    socket.send(packet, 0, packet.length, parseInt(port), addr);
   });
 };
 
-exports.trace = (name, type) => {
+const _resolveTCP = (packet, addr, port = 53) => {
   return new Promise((resolve, reject) => {
-    const trace = [];
+    const socket = new net.Socket();
 
-    const rootServer = lib.rand(root.servers).address;
-    this.resolve(name, type, rootServer)
-      .then(rootResponse => {
-        trace.push(rootResponse);
+    let message = Buffer.alloc(2048);
+    socket.connect(parseInt(port), addr, () => {
+      socket.write(packet);
+    });
 
-        const tldServer = lib.rand(rootResponse.authorities.map(a => a.data));
-        this.resolve(name, type, tldServer)
-          .then(tldResponse => {
-            trace.push(tldResponse);
+    socket.on("data", data => {
+      message = Buffer.concat([message, data]);
+    });
 
-            const authoritativeServer = lib.rand(tldResponse.authorities.map(a => a.data));
-            this.resolve(name, type, authoritativeServer)
-              .then(authoritativeResponse => {
-                trace.push(authoritativeResponse);
-                resolve(trace);
-              })
-              .catch(err => {
-                err = new Error(`lookup from authoritative server ${authoritativeServer.address} failed: ${err}`);
-                reject(err);
-              });
-          })
-          .catch(err => {
-            err = new Error(`lookup from tld server ${tldServer.address} failed: ${err}`);
-            reject(err);
-          });
-      })
-      .catch(err => {
-        err = new Error(`lookup from root server ${rootServer.address} failed: ${err}`);
-        reject(err);
-      })
+    socket.on("drain", () => {
+      resolve(dnsPacket.decode(message));
+      socket.close();
+    });
+
+    socket.on("end", () => {
+      resolve(dnsPacket.decode(message));
+      socket.destroy();
+    });
+
+    socket.on("error", err => {
+      reject(err);
+    });
+
+    socket.on("close", function() {
+      socket.destroy();
+    });
+  });
+};
+
+exports.resolve = (name, type, opts = {}) => {
+  if (!opts.servers || !opts.servers.length) {
+    opts.servers = dns.getServers();
+  }
+
+  const packet = dnsPacket.encode({
+    type: "query",
+    flags: dnsPacket.RECURSION_DESIRED,
+    questions: [{
+      type,
+      name,
+    }],
+  });
+  
+  const queries = [];
+  for (const server of opts.servers) {
+    const [addr, port] = server.split(":");
+    queries.push(_resolveUDP(packet, addr, port));
+    queries.push(_resolveTCP(packet, addr, port));
+  }
+
+  return Promise.race(queries);
+};
+
+exports.trace = (name, type) => {
+  return new Promise(async (resolve, reject) => {
+    const trace = {};
+
+    try {
+      const authorities = [];
+      for (const authority of root.servers) {
+        authorities.push(authority.address)
+      }
+      trace.root = await this.resolve(name, type, {servers: authorities});
+    } catch (err) {
+      err = new Error(`lookup from root server failed: ${err}`);
+      reject(err);
+    }
+
+    try {
+      if (trace.root.authorities && trace.root.authorities.length) {
+        const authorities = [];
+        for (const authority of trace.root.authorities) {
+          if (authority.type === "NS") {
+            authorities.push(authority.data)
+          }
+        }
+        trace.tld = await this.resolve(name, type, {servers: authorities});
+      }
+    } catch (err) {
+      err = new Error(`lookup from tld server failed: ${err}`);
+      reject(err);
+    }
+
+    try {
+      if (trace.tld.authorities && trace.tld.authorities.length) {
+        const authorities = [];
+        for (const authority of trace.tld.authorities) {
+          if (authority.type === "NS") {
+            authorities.push(authority.data)
+          }
+        }
+        trace.authoritative = await this.resolve(name, type, {servers: authorities});
+      }
+    } catch (err) {
+      err = new Error(`lookup from authoritative server failed: ${err}`);
+      reject(err);
+    }
+
+    resolve(trace);
   });
 };

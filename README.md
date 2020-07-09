@@ -29,495 +29,146 @@ $ npm install --save @violetnorth/dns
 ```javascript
 const dns = require("@violetnorth/dns");
 
-const soa = await dns.resolve("violetnorth.com", "A", "8.8.8.8");
-console.log(soa);
+const ns = await dns.resolve("violetnorth.com", "NS", { servers: ["192.168.0.1"] });
+console.log(ns);
 // {
-//   "id": 0,
-//   "type": "response",
-//   "flags": 384,
-//   "flag_qr": true,
-//   "opcode": "QUERY",
-//   "flag_aa": false,
-//   "flag_tc": false,
-//   "flag_rd": true,
-//   "flag_ra": true,
-//   "flag_z": false,
-//   "flag_ad": false,
-//   "flag_cd": false,
-//   "rcode": "NOERROR",
-//   "questions": [
+//   id: 0,
+//   type: 'response',
+//   flags: 384,
+//   flag_qr: true,
+//   opcode: 'QUERY',
+//   flag_aa: false,
+//   flag_tc: false,
+//   flag_rd: true,
+//   flag_ra: true,
+//   flag_z: false,
+//   flag_ad: false,
+//   flag_cd: false,
+//   rcode: 'NOERROR',
+//   questions: [ { name: 'violetnorth.com', type: 'NS', class: 'IN' } ],
+//   answers: [
 //     {
-//       "name": "violetnorth.com",
-//       "type": "A",
-//       "class": "IN"
+//       name: 'violetnorth.com',
+//       type: 'NS',
+//       ttl: 17126,
+//       class: 'IN',
+//       flush: false,
+//       data: 'ns-cloud-b4.googledomains.com'
+//     },
+//     {
+//       name: 'violetnorth.com',
+//       type: 'NS',
+//       ttl: 17126,
+//       class: 'IN',
+//       flush: false,
+//       data: 'ns-cloud-b1.googledomains.com'
+//     },
+//     {
+//       name: 'violetnorth.com',
+//       type: 'NS',
+//       ttl: 17126,
+//       class: 'IN',
+//       flush: false,
+//       data: 'ns-cloud-b2.googledomains.com'
+//     },
+//     {
+//       name: 'violetnorth.com',
+//       type: 'NS',
+//       ttl: 17126,
+//       class: 'IN',
+//       flush: false,
+//       data: 'ns-cloud-b3.googledomains.com'
 //     }
 //   ],
-//   "answers": [
-//     {
-//       "name": "violetnorth.com",
-//       "type": "A",
-//       "ttl": 3599,
-//       "class": "IN",
-//       "flush": false,
-//       "data": "216.239.32.21"
-//     },
-//     {
-//       "name": "violetnorth.com",
-//       "type": "A",
-//       "ttl": 3599,
-//       "class": "IN",
-//       "flush": false,
-//       "data": "216.239.34.21"
-//     },
-//     {
-//       "name": "violetnorth.com",
-//       "type": "A",
-//       "ttl": 3599,
-//       "class": "IN",
-//       "flush": false,
-//       "data": "216.239.36.21"
-//     },
-//     {
-//       "name": "violetnorth.com",
-//       "type": "A",
-//       "ttl": 3599,
-//       "class": "IN",
-//       "flush": false,
-//       "data": "216.239.38.21"
-//     }
-//   ],
-//   "authorities": [],
-//   "additionals": []
+//   authorities: [],
+//   additionals: []
 // }
 
-const trace = await dns.trace("violetnorth.com", "A");
+const trace = await dns.trace("violetnorth.com", "NS");
 console.log(trace);
-// [
-//   {
-//     "id": 0,
-//     "type": "response",
-//     "flags": 256,
-//     "flag_qr": true,
-//     "opcode": "QUERY",
-//     "flag_aa": false,
-//     "flag_tc": false,
-//     "flag_rd": true,
-//     "flag_ra": false,
-//     "flag_z": false,
-//     "flag_ad": false,
-//     "flag_cd": false,
-//     "rcode": "NOERROR",
-//     "questions": [
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "class": "IN"
-//       }
+// {
+//   root: {
+//     id: 0,
+//     type: 'response',
+//     flags: 768,
+//     flag_qr: true,
+//     opcode: 'QUERY',
+//     flag_aa: false,
+//     flag_tc: true,
+//     flag_rd: true,
+//     flag_ra: false,
+//     flag_z: false,
+//     flag_ad: false,
+//     flag_cd: false,
+//     rcode: 'NOERROR',
+//     questions: [ [Object] ],
+//     answers: [],
+//     authorities: [
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object]
 //     ],
-//     "answers": [],
-//     "authorities": [
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "a.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "b.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "c.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "d.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "e.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "f.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "g.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "h.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "i.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "j.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "k.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "l.gtld-servers.net"
-//       },
-//       {
-//         "name": "com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "m.gtld-servers.net"
-//       }
-//     ],
-//     "additionals": [
-//       {
-//         "name": "a.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.5.6.30"
-//       },
-//       {
-//         "name": "b.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.33.14.30"
-//       },
-//       {
-//         "name": "c.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.26.92.30"
-//       },
-//       {
-//         "name": "d.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.31.80.30"
-//       },
-//       {
-//         "name": "e.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.12.94.30"
-//       },
-//       {
-//         "name": "f.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.35.51.30"
-//       },
-//       {
-//         "name": "g.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.42.93.30"
-//       },
-//       {
-//         "name": "h.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.54.112.30"
-//       },
-//       {
-//         "name": "i.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.43.172.30"
-//       },
-//       {
-//         "name": "j.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.48.79.30"
-//       },
-//       {
-//         "name": "k.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.52.178.30"
-//       },
-//       {
-//         "name": "l.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.41.162.30"
-//       },
-//       {
-//         "name": "m.gtld-servers.net",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "192.55.83.30"
-//       },
-//       {
-//         "name": "a.gtld-servers.net",
-//         "type": "AAAA",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "2001:503:a83e::2:30"
-//       }
+//     additionals: [
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object], [Object],
+//       [Object]
 //     ]
 //   },
-//   {
-//     "id": 0,
-//     "type": "response",
-//     "flags": 256,
-//     "flag_qr": true,
-//     "opcode": "QUERY",
-//     "flag_aa": false,
-//     "flag_tc": false,
-//     "flag_rd": true,
-//     "flag_ra": false,
-//     "flag_z": false,
-//     "flag_ad": false,
-//     "flag_cd": false,
-//     "rcode": "NOERROR",
-//     "questions": [
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "class": "IN"
-//       }
-//     ],
-//     "answers": [],
-//     "authorities": [
-//       {
-//         "name": "violetnorth.com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "ns-cloud-b1.googledomains.com"
-//       },
-//       {
-//         "name": "violetnorth.com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "ns-cloud-b2.googledomains.com"
-//       },
-//       {
-//         "name": "violetnorth.com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "ns-cloud-b3.googledomains.com"
-//       },
-//       {
-//         "name": "violetnorth.com",
-//         "type": "NS",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "ns-cloud-b4.googledomains.com"
-//       }
-//     ],
-//     "additionals": [
-//       {
-//         "name": "ns-cloud-b1.googledomains.com",
-//         "type": "AAAA",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "2001:4860:4802:32::6b"
-//       },
-//       {
-//         "name": "ns-cloud-b1.googledomains.com",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.32.107"
-//       },
-//       {
-//         "name": "ns-cloud-b2.googledomains.com",
-//         "type": "AAAA",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "2001:4860:4802:34::6b"
-//       },
-//       {
-//         "name": "ns-cloud-b2.googledomains.com",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.34.107"
-//       },
-//       {
-//         "name": "ns-cloud-b3.googledomains.com",
-//         "type": "AAAA",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "2001:4860:4802:36::6b"
-//       },
-//       {
-//         "name": "ns-cloud-b3.googledomains.com",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.36.107"
-//       },
-//       {
-//         "name": "ns-cloud-b4.googledomains.com",
-//         "type": "AAAA",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "2001:4860:4802:38::6b"
-//       },
-//       {
-//         "name": "ns-cloud-b4.googledomains.com",
-//         "type": "A",
-//         "ttl": 172800,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.38.107"
-//       }
+//   tld: {
+//     id: 0,
+//     type: 'response',
+//     flags: 256,
+//     flag_qr: true,
+//     opcode: 'QUERY',
+//     flag_aa: false,
+//     flag_tc: false,
+//     flag_rd: true,
+//     flag_ra: false,
+//     flag_z: false,
+//     flag_ad: false,
+//     flag_cd: false,
+//     rcode: 'NOERROR',
+//     questions: [ [Object] ],
+//     answers: [],
+//     authorities: [ [Object], [Object], [Object], [Object] ],
+//     additionals: [
+//       [Object],
+//       [Object],
+//       [Object],
+//       [Object],
+//       [Object],
+//       [Object],
+//       [Object],
+//       [Object]
 //     ]
 //   },
-//   {
-//     "id": 0,
-//     "type": "response",
-//     "flags": 1280,
-//     "flag_qr": true,
-//     "opcode": "QUERY",
-//     "flag_aa": true,
-//     "flag_tc": false,
-//     "flag_rd": true,
-//     "flag_ra": false,
-//     "flag_z": false,
-//     "flag_ad": false,
-//     "flag_cd": false,
-//     "rcode": "NOERROR",
-//     "questions": [
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "class": "IN"
-//       }
-//     ],
-//     "answers": [
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "ttl": 3600,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.32.21"
-//       },
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "ttl": 3600,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.34.21"
-//       },
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "ttl": 3600,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.36.21"
-//       },
-//       {
-//         "name": "violetnorth.com",
-//         "type": "A",
-//         "ttl": 3600,
-//         "class": "IN",
-//         "flush": false,
-//         "data": "216.239.38.21"
-//       }
-//     ],
-//     "authorities": [],
-//     "additionals": []
+//   authoritative: {
+//     id: 0,
+//     type: 'response',
+//     flags: 1280,
+//     flag_qr: true,
+//     opcode: 'QUERY',
+//     flag_aa: true,
+//     flag_tc: false,
+//     flag_rd: true,
+//     flag_ra: false,
+//     flag_z: false,
+//     flag_ad: false,
+//     flag_cd: false,
+//     rcode: 'NOERROR',
+//     questions: [ [Object] ],
+//     answers: [ [Object], [Object], [Object], [Object] ],
+//     authorities: [],
+//     additionals: []
 //   }
-// ]
+// }
 ```
 
 ### License
