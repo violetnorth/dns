@@ -115,7 +115,7 @@ exports.resolve = (name, type, opts = {}) => {
   return Promise.race(queries);
 };
 
-exports.trace = (name, type) => {
+exports.trace = (name, type, opts = {}) => {
   return new Promise(async (resolve, reject) => {
     const trace = {};
 
@@ -124,7 +124,7 @@ exports.trace = (name, type) => {
       for (const authority of root.servers) {
         authorities.push(authority.address)
       }
-      trace.root = await this.resolve(name, type, {servers: authorities});
+      trace.root = await this.resolve(name, type, {...opts, servers: authorities});
     } catch (err) {
       err = new Error(`lookup from root server failed: ${err}`);
       reject(err);
@@ -138,7 +138,7 @@ exports.trace = (name, type) => {
             authorities.push(authority.data)
           }
         }
-        trace.tld = await this.resolve(name, type, {servers: authorities});
+        trace.tld = await this.resolve(name, type, {...opts, servers: authorities});
       }
     } catch (err) {
       err = new Error(`lookup from tld server failed: ${err}`);
@@ -153,7 +153,7 @@ exports.trace = (name, type) => {
             authorities.push(authority.data)
           }
         }
-        trace.authoritative = await this.resolve(name, type, {servers: authorities});
+        trace.authoritative = await this.resolve(name, type, {...opts, servers: authorities});
       }
     } catch (err) {
       err = new Error(`lookup from authoritative server failed: ${err}`);
