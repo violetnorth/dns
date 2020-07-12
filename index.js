@@ -32,6 +32,7 @@ const _resolveUDP = (packet, addr, port = 53) => {
     });
 
     socket.on("error", err => {
+      socket.close();
       reject(err);
       return;
     });
@@ -54,7 +55,7 @@ const _resolveTCP = (packet, addr, port = 53) => {
     });
 
     socket.on("drain", () => {
-      socket.close();
+      socket.destroy();
       resolve(dnsPacket.decode(message));
       return;
     });
@@ -66,11 +67,13 @@ const _resolveTCP = (packet, addr, port = 53) => {
     });
 
     socket.on("error", err => {
+      socket.destroy();
       reject(err);
       return;
     });
 
     socket.on("close", function() {
+      socket.destroy();
       resolve(dnsPacket.decode(message));
       return;
     });
