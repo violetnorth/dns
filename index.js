@@ -37,7 +37,13 @@ const _resolveUDP = (packet, addr, port = 53) => {
       return;
     });
 
-    socket.send(packet, 0, packet.length, parseInt(port), addr);
+    socket.send(packet, 0, packet.length, parseInt(port), addr, err => {
+      if (err) {
+        socket.close();
+        reject(err);
+        return;
+      }
+    });
   });
 };
 
