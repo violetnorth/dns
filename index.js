@@ -5,8 +5,21 @@ const net = require("net");
 const dgram = require("dgram");
 const dnsPacket = require("dns-packet");
 
-const promise = require("./promise");
 const root = require("./root.json");
+
+const _promiseTimeout = (ms, promise) => {
+  const timeout = new Promise((resolve, reject) => {
+    const id = setTimeout(() => {
+      clearTimeout(id);
+      reject("timed out")
+    }, parseInt(ms))
+  });
+
+  return Promise.race([
+    promise,
+    timeout
+  ]);
+};
 
 const _resolveUDP = (packet, addr, port = 53) => {
   return new Promise((resolve, reject) => {
@@ -73,23 +86,7 @@ const _resolveTCP = (packet, addr, port = 53) => {
   });
 };
 
-exports.resolve = (name, type, opts = {}) => {
-  if (!opts.servers || !opts.servers.length) {
-    opts.servers = dns.getServers();
-  }
-
-  if (!opts.protocols || !opts.protocols.length) {
-    opts.protocols = ["udp"];
-  }
-
-  if (!opts.timeout) {
-    opts.timeout = 5000;
-  }
-
-  if (!opts.retry) {
-    opts.retry = 1;
-  }
-
+exports._resolve = (name, type, opts = {}) => {
   const packet = dnsPacket.encode({
     type: "query",
     flags: dnsPacket.RECURSION_DESIRED,
@@ -103,17 +100,49 @@ exports.resolve = (name, type, opts = {}) => {
   for (const server of opts.servers) {
     const [addr, port] = server.split(":");
     if (opts.protocols.includes("udp")) {
-      const query = promise.retry(opts.retry, promise.timeout(opts.timeout, _resolveUDP(packet, addr, port)));
+      const query = _promiseTimeout(parseInt(opts.timeout), _resolveUDP(packet, addr, port));
       queries.push(query);
     }
     if (opts.protocols.includes("tcp")) {
-      const query = promise.retry(opts.retry, promise.timeout(opts.timeout, _resolveTCP(packet, addr, port)));
+      const query = _promiseTimeout(parseInt(opts.timeout), _resolveTCP(packet, addr, port));
       queries.push(query);
     }
   }
 
   return Promise.race(queries);
 };
+
+exports.resolve = (name, type, opts = {}) => {
+  return new Promise(async (resolve, reject) => {
+    if (!opts.servers || !opts.servers.length) {
+      opts.servers = dns.getServers();
+    }
+  
+    if (!opts.protocols || !opts.protocols.length) {
+      opts.protocols = ["udp"];
+    }
+  
+    if (!opts.timeout) {
+      opts.timeout = 5000;
+    }
+  
+    if (!opts.retry) {
+      opts.retry = 1;
+    }
+
+    let err;
+    for (let i = 0; i < parseInt(opts.retry); i++) {
+      try {
+        const resp = await this._resolve(name, type, opts);
+        return resolve(resp);
+      } catch (e) {
+        err = e;
+      }
+    }
+
+    reject(err);
+  });
+}
 
 exports.trace = (name, type, opts = {}) => {
   return new Promise(async (resolve, reject) => {
