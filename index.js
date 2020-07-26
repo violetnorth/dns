@@ -7,6 +7,10 @@ const dnsPacket = require("dns-packet");
 
 const root = require("./root.json");
 
+const _promiseSleep = ms => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
 const _promiseTimeout = (ms, promise) => {
   const timeout = new Promise((resolve, reject) => {
     const id = setTimeout(() => {
@@ -130,6 +134,10 @@ exports.resolve = (name, type, opts = {}) => {
       opts.retry = 1;
     }
 
+    if (!opts.backoff) {
+      opts.backoff = 0;
+    }
+
     let err;
     for (let i = 0; i < parseInt(opts.retry); i++) {
       try {
@@ -138,6 +146,7 @@ exports.resolve = (name, type, opts = {}) => {
       } catch (e) {
         err = e;
       }
+      await _promiseSleep(parseInt(opts.backoff))
     }
 
     reject(err);
