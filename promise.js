@@ -5,7 +5,7 @@ exports.timeout = (ms, promise) => {
     const id = setTimeout(() => {
       clearTimeout(id);
       reject("timed out")
-    }, ms)
+    }, parseInt(ms))
   });
 
   return Promise.race([
@@ -17,7 +17,7 @@ exports.timeout = (ms, promise) => {
 exports.retry = (attempts, promise) => {
   return new Promise(async (resolve, reject) => {
     let err;
-    for (let i = 0; i < attempts; i++) {
+    for (let i = 0; i < parseInt(attempts); i++) {
       try {
         const resp = await promise;
         return resolve(resp);
