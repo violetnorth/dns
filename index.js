@@ -5,21 +5,8 @@ const net = require("net");
 const dgram = require("dgram");
 const dnsPacket = require("dns-packet");
 
+const promise = require("./promise");
 const root = require("./root.json");
-
-const promiseTimeout = (ms, promise) => {
-  const timeout = new Promise((resolve, reject) => {
-    const id = setTimeout(() => {
-      clearTimeout(id);
-      reject("timed out")
-    }, ms)
-  });
-
-  return Promise.race([
-    promise,
-    timeout
-  ])
-};
 
 const _resolveUDP = (packet, addr, port = 53) => {
   return new Promise((resolve, reject) => {
@@ -99,6 +86,10 @@ exports.resolve = (name, type, opts = {}) => {
     opts.timeout = 5000;
   }
 
+  if (!opts.retry) {
+    opts.retry = 1;
+  }
+
   const packet = dnsPacket.encode({
     type: "query",
     flags: dnsPacket.RECURSION_DESIRED,
@@ -112,11 +103,11 @@ exports.resolve = (name, type, opts = {}) => {
   for (const server of opts.servers) {
     const [addr, port] = server.split(":");
     if (opts.protocols.includes("udp")) {
-      const query = promiseTimeout(opts.timeout, _resolveUDP(packet, addr, port));
+      const query = promise.retry(opts.retry, promise.timeout(opts.timeout, _resolveUDP(packet, addr, port)));
       queries.push(query);
     }
     if (opts.protocols.includes("tcp")) {
-      const query = promiseTimeout(opts.timeout, _resolveTCP(packet, addr, port));
+      const query = promise.retry(opts.retry, promise.timeout(opts.timeout, _resolveTCP(packet, addr, port)));
       queries.push(query);
     }
   }
