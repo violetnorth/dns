@@ -157,45 +157,55 @@ exports.trace = (name, type, opts = {}) => {
   return new Promise(async (resolve, reject) => {
     const trace = {};
 
-    try {
-      const authorities = [];
-      for (const authority of root.servers) {
-        authorities.push(authority.address)
-      }
-      trace.root = await this.resolve(name, type, {...opts, servers: authorities});
-    } catch (err) {
-      err = new Error(`lookup from root server failed: ${err}`);
-      reject(err);
+    if (!opts.levels || !opts.levels.length) {
+      opts.levels = ["root", "tld", "authoritative"]
     }
 
-    try {
-      if (trace.root.authorities && trace.root.authorities.length) {
+    if (opts.levels.includes("root")) {
+      try {
         const authorities = [];
-        for (const authority of trace.root.authorities) {
-          if (authority.type === "NS") {
-            authorities.push(authority.data)
-          }
+        for (const authority of root.servers) {
+          authorities.push(authority.address)
         }
-        trace.tld = await this.resolve(name, type, {...opts, servers: authorities});
+        trace.root = await this.resolve(name, type, {...opts, servers: authorities});
+      } catch (err) {
+        err = new Error(`lookup from root server failed: ${err}`);
+        reject(err);
       }
-    } catch (err) {
-      err = new Error(`lookup from tld server failed: ${err}`);
-      reject(err);
     }
 
-    try {
-      if (trace.tld.authorities && trace.tld.authorities.length) {
-        const authorities = [];
-        for (const authority of trace.tld.authorities) {
-          if (authority.type === "NS") {
-            authorities.push(authority.data)
+    if (opts.levels.includes("tld")) {
+      try {
+        if (trace.root.authorities && trace.root.authorities.length) {
+          const authorities = [];
+          for (const authority of trace.root.authorities) {
+            if (authority.type === "NS") {
+              authorities.push(authority.data)
+            }
           }
+          trace.tld = await this.resolve(name, type, {...opts, servers: authorities});
         }
-        trace.authoritative = await this.resolve(name, type, {...opts, servers: authorities});
+      } catch (err) {
+        err = new Error(`lookup from tld server failed: ${err}`);
+        reject(err);
       }
-    } catch (err) {
-      err = new Error(`lookup from authoritative server failed: ${err}`);
-      reject(err);
+    }
+
+    if (opts.levels.includes("authoritative")) {
+      try {
+        if (trace.tld.authorities && trace.tld.authorities.length) {
+          const authorities = [];
+          for (const authority of trace.tld.authorities) {
+            if (authority.type === "NS") {
+              authorities.push(authority.data)
+            }
+          }
+          trace.authoritative = await this.resolve(name, type, {...opts, servers: authorities});
+        }
+      } catch (err) {
+        err = new Error(`lookup from authoritative server failed: ${err}`);
+        reject(err);
+      }
     }
 
     resolve(trace);
