@@ -1,7 +1,6 @@
 "use strict";
 
 const dns = require("dns");
-const net = require("net");
 const dgram = require("dgram");
 const dnsPacket = require("dns-packet");
 
@@ -15,8 +14,8 @@ const _promiseTimeout = (ms, promise) => {
   const timeout = new Promise((resolve, reject) => {
     const id = setTimeout(() => {
       clearTimeout(id);
-      reject("timed out")
-    }, parseInt(ms))
+      reject("timed out");
+    }, parseInt(ms));
   });
 
   return Promise.race([
@@ -25,17 +24,26 @@ const _promiseTimeout = (ms, promise) => {
   ]);
 };
 
-const _resolveUDP = (packet, addr, port = 53) => {
+const _resolveUDP = (packet, addr, port = 53, timeout) => {
   return new Promise((resolve, reject) => {
     const socket = dgram.createSocket("udp4");
 
+    const id = setTimeout(() => {
+      clearTimeout(id);
+      socket.close();
+      reject("timed out");
+      return;
+    }, parseInt(timeout));
+
     socket.on("message", message => {
+      clearTimeout(id);
       socket.close();
       resolve(dnsPacket.decode(message));
       return;
     });
 
     socket.on("error", err => {
+      clearTimeout(id);
       socket.close();
       reject(err);
       return;
@@ -43,49 +51,10 @@ const _resolveUDP = (packet, addr, port = 53) => {
 
     socket.send(packet, 0, packet.length, parseInt(port), addr, err => {
       if (err) {
+        clearTimeout(id);
         socket.close();
         reject(err);
-        return;
       }
-    });
-  });
-};
-
-const _resolveTCP = (packet, addr, port = 53) => {
-  return new Promise((resolve, reject) => {
-    const socket = new net.Socket();
-
-    socket.connect(parseInt(port), addr, () => {
-      socket.write(packet);
-    });
-
-    let message = Buffer.alloc(4096);
-    socket.on("data", data => {
-      message = Buffer.concat([message, data], message.length + data.length);
-    });
-
-    socket.on("drain", () => {
-      socket.destroy();
-      resolve(dnsPacket.decode(message));
-      return;
-    });
-
-    socket.on("end", () => {
-      socket.destroy();
-      resolve(dnsPacket.decode(message));
-      return;
-    });
-
-    socket.on("error", err => {
-      socket.destroy();
-      reject(err);
-      return;
-    });
-
-    socket.on("close", function() {
-      socket.destroy();
-      resolve(dnsPacket.decode(message));
-      return;
     });
   });
 };
@@ -103,14 +72,9 @@ exports._resolve = (name, type, opts = {}) => {
   const queries = [];
   for (const server of opts.servers) {
     const [addr, port] = server.split(":");
-    if (opts.protocols.includes("udp")) {
-      const query = _promiseTimeout(parseInt(opts.timeout), _resolveUDP(packet, addr, port));
-      queries.push(query);
-    }
-    if (opts.protocols.includes("tcp")) {
-      const query = _promiseTimeout(parseInt(opts.timeout), _resolveTCP(packet, addr, port));
-      queries.push(query);
-    }
+    const timeout = parseInt(opts.timeout);
+    const query = _promiseTimeout(timeout, _resolveUDP(packet, addr, port, timeout));
+    queries.push(query);
   }
 
   return Promise.race(queries);
@@ -120,10 +84,6 @@ exports.resolve = (name, type, opts = {}) => {
   return new Promise(async (resolve, reject) => {
     if (!opts.servers || !opts.servers.length) {
       opts.servers = dns.getServers();
-    }
-  
-    if (!opts.protocols || !opts.protocols.length) {
-      opts.protocols = ["udp"];
     }
   
     if (!opts.timeout) {
