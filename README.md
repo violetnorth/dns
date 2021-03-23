@@ -30,7 +30,6 @@ $ npm install --save @violetnorth/dns
 const dns = require("@violetnorth/dns");
 
 const ns = await dns.resolve("violetnorth.com", "NS", { servers: ["192.168.0.1"] });
-console.log(ns);
 // {
 //   id: 0,
 //   type: 'response',
@@ -85,7 +84,6 @@ console.log(ns);
 // }
 
 const trace = await dns.trace("violetnorth.com", "NS");
-console.log(trace);
 // {
 //   root: {
 //     id: 0,
