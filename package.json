@@ -26,6 +26,6 @@
     "root lookup"
   ],
   "dependencies": {
-    "dns-packet": "5.2.1"
+    "dns-packet": "5.2.2"
   }
 }
